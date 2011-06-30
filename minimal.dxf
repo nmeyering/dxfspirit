@@ -1,0 +1,50 @@
+  0
+SECTION
+  2
+HEADER
+  9
+$ACADVER
+  1
+AC1024
+  9
+$ACADMAINTVER
+ 70
+     6
+  9
+$DWGCODEPAGE
+  3
+ANSI_1252
+  9
+$LASTSAVEDBY
+  1
+deine.mudda
+  9
+$INSBASE
+ 10
+0.0
+ 20
+0.0
+ 30
+0.0
+  0
+ENDSEC
+  0
+SECTION
+  2
+ENTITIES
+  3
+foo
+  0
+ENDSEC
+  0
+SECTION
+  2
+ENTITIES
+  7
+42
+	8
+23
+  0
+ENDSEC
+  0
+EOF
