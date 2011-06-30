@@ -16,11 +16,11 @@ int main()
 	typedef std::string::iterator iterator;
 	typedef qi::rule<iterator> rule;
 
-	using qi::ascii::char_;
+	using qi::standard::char_;
+	using qi::standard::space;
 	using qi::digit;
 	using qi::lit;
 	using qi::repeat;
-	using qi::ascii::space;
 
 	// grammar begin
 	rule document;
@@ -44,17 +44,6 @@ int main()
 	eof.name("eof");
 	key.name("key");
 	value.name("value");
-
-	BOOST_SPIRIT_DEBUG_NODE(document);
-	BOOST_SPIRIT_DEBUG_NODE(key_value_pair);
-	BOOST_SPIRIT_DEBUG_NODE(section);
-	BOOST_SPIRIT_DEBUG_NODE(section_head);
-	BOOST_SPIRIT_DEBUG_NODE(section_tail);
-	BOOST_SPIRIT_DEBUG_NODE(section_body);
-	BOOST_SPIRIT_DEBUG_NODE(section_name);
-	BOOST_SPIRIT_DEBUG_NODE(eof);
-	BOOST_SPIRIT_DEBUG_NODE(key);
-	BOOST_SPIRIT_DEBUG_NODE(value);
 
 	document = +section >> eof;
 	section = (section_head >> section_body >> section_tail);
@@ -80,8 +69,19 @@ int main()
 		lit("  0\nEOF")
 		>> *char_;
 	key = *space >> repeat(1,4)[digit] >> "\n";
-	value = +(char_ - "\n") >> "\n";
+	value = *(char_ - "\n") >> "\n";
 	key_value_pair = key >> value;
+
+	BOOST_SPIRIT_DEBUG_NODE(document);
+	BOOST_SPIRIT_DEBUG_NODE(key_value_pair);
+	BOOST_SPIRIT_DEBUG_NODE(section);
+	BOOST_SPIRIT_DEBUG_NODE(section_head);
+	BOOST_SPIRIT_DEBUG_NODE(section_tail);
+	BOOST_SPIRIT_DEBUG_NODE(section_body);
+	BOOST_SPIRIT_DEBUG_NODE(section_name);
+	BOOST_SPIRIT_DEBUG_NODE(eof);
+	BOOST_SPIRIT_DEBUG_NODE(key);
+	BOOST_SPIRIT_DEBUG_NODE(value);
 	//grammar end
 
 	// std::string input("  0\nSECTION\n  2\nENTITIES\n  0\nENDSEC\n  0\nEOF\n");
