@@ -1,5 +1,5 @@
 #include <boost/config/warning_disable.hpp>
-#define BOOST_SPIRIT_DEBUG
+//#define BOOST_SPIRIT_DEBUG
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
@@ -9,30 +9,41 @@
 #include <string>
 #include <vector>
 
+void print(std::string str)
+{
+	std::cout << str << ", ";
+}
 int main()
 {
 	namespace qi = boost::spirit::qi;
 
 	typedef std::string::iterator iterator;
 	typedef qi::rule<iterator> rule;
+	typedef qi::rule<iterator, std::string()> str_rule;
+	typedef qi::rule<iterator, std::pair<std::string, std::string>()> pair_rule;
+	typedef qi::rule<iterator, std::map<std::string, std::string>()> map_rule;
+	typedef std::vector<std::map<std::string, std::string> > document_format;
+	typedef qi::rule<iterator, document_format> document_rule;
 
+	using qi::digit;
+	using qi::eol;
+	using qi::lit;
+	using qi::omit;
+	using qi::repeat;
 	using qi::standard::char_;
 	using qi::standard::space;
-	using qi::digit;
-	using qi::lit;
-	using qi::repeat;
 
 	// grammar begin
-	rule document;
-	rule key_value_pair;
+	document_rule document;
+	map_rule section_body;
+	pair_rule key_value_pair;
+	rule eof;
 	rule section;
 	rule section_head;
 	rule section_tail;
-	rule section_body;
-	rule section_name;
-	rule eof;
-	rule key;
-	rule value;
+	str_rule key;
+	str_rule section_name;
+	str_rule value;
 
 	document.name("document");
 	key_value_pair.name("key_value_pair");
@@ -46,17 +57,18 @@ int main()
 	value.name("value");
 
 	document = +section >> eof;
-	section = (section_head >> section_body >> section_tail);
+	section = section_head >> section_body >> section_tail;
 	section_head = 
-		lit("  0\nSECTION\n  2\n")
-		>> section_name
-		>> "\n";
+		omit[*space >> lit("0") >> eol
+		>> lit("SECTION") >> eol
+		>> *space >> lit("2") >> eol]
+		>> section_name >> eol;
 	section_body = 
-		*(
-			(!section_tail) 
+		*((!section_tail) 
 			>> key_value_pair);
 	section_tail = 
-		lit("  0\nENDSEC\n");
+		*space >> lit("0") >> eol
+		>> lit("ENDSEC") >> eol;
 	section_name = (
 		lit("HEADER") 
 		| lit("CLASSES") 
@@ -65,11 +77,12 @@ int main()
 		| lit("ENTITIES")
 		| lit("OBJECTS")
 		| lit("THUMBNAILIMAGE"));
-	eof = 
-		lit("  0\nEOF")
-		>> *char_;
-	key = *space >> repeat(1,4)[digit] >> "\n";
-	value = *(char_ - "\n") >> "\n";
+	eof = omit[
+		*space >> lit("0") >> eol
+		>> lit("EOF")
+		>> *char_];
+	key = omit[*space] >> repeat(1,4)[digit] >> eol;
+	value = *(char_ - eol) >> eol;
 	key_value_pair = key >> value;
 
 	BOOST_SPIRIT_DEBUG_NODE(document);
@@ -84,22 +97,19 @@ int main()
 	BOOST_SPIRIT_DEBUG_NODE(value);
 	//grammar end
 
-	// std::string input("  0\nSECTION\n  2\nENTITIES\n  0\nENDSEC\n  0\nEOF\n");
-	/*
-	std::string input;
-	std::cin.unsetf(std::ios::skipws);
-	std::copy(std::istream_iterator<char>(std::cin), std::istream_iterator<char>(), std::back_inserter(input));
-	*/
 	std::string input((std::istreambuf_iterator<char>(std::cin)), std::istreambuf_iterator<char>());
 
 	iterator start = input.begin();
 	iterator end = input.end();
 
+	document_format output;
+
 	bool res = 
 		qi::parse(
 			start,
 			end,
-			document);
+			document,
+			output);
 
 	if (start == end)
 		std::cout << "Reached end of file." << std::endl;
@@ -107,4 +117,6 @@ int main()
 		std::cout << "success!" << std::endl;
 	else
 		std::cout << "failure!" << std::endl;
+	for (std::vector<std::string>::iterator it = v.begin(); it != v.end(); ++it)
+		std::cout << *it << "\t";
 }
