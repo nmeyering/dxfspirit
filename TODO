@@ -1,0 +1,4 @@
+* parse entity section separately
+	* parse entities as individual std::maps
+* ignore other sections
+* output as xml

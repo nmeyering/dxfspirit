@@ -11,10 +11,6 @@
 #include <vector>
 #include <map>
 
-void print(std::string str)
-{
-	std::cout << str << ", ";
-}
 int main()
 {
 	namespace qi = boost::spirit::qi;
@@ -25,7 +21,7 @@ int main()
 	typedef qi::rule<iterator, std::pair<std::string, std::string>()> pair_rule;
 	typedef qi::rule<iterator, std::map<std::string, std::string>()> map_rule;
 	typedef std::vector<std::map<std::string, std::string> > document_format;
-	typedef qi::rule<iterator, document_format> document_rule;
+	typedef qi::rule<iterator, document_format()> document_rule;
 
 	using qi::digit;
 	using qi::eol;
@@ -33,7 +29,7 @@ int main()
 	using qi::omit;
 	using qi::repeat;
 	using qi::standard::char_;
-	using qi::standard::space;
+	using qi::standard::blank;
 
 	// grammar begin
 	document_rule document;
@@ -58,18 +54,18 @@ int main()
 	key.name("key");
 	value.name("value");
 
-	document = +section >> eof;
-	section = section_head >> section_body >> section_tail;
+	document = (+section) >> omit[eof];
+	section = omit[section_head] >> section_body >> omit[section_tail];
 	section_head = 
-		omit[*space >> lit("0") >> eol
+		*blank >> lit("0") >> eol
 		>> lit("SECTION") >> eol
-		>> *space >> lit("2") >> eol
-		>> section_name >> eol];
+		>> *blank >> lit("2") >> eol
+		>> section_name >> eol;
 	section_body = 
 		*((!section_tail) 
 			>> key_value_pair);
 	section_tail = 
-		omit[*space] >> lit("0") >> eol
+		*blank >> lit("0") >> eol
 		>> lit("ENDSEC") >> eol;
 	section_name = (
 		lit("HEADER") 
@@ -79,13 +75,13 @@ int main()
 		| lit("ENTITIES")
 		| lit("OBJECTS")
 		| lit("THUMBNAILIMAGE"));
-	eof = omit[
-		*space >> lit("0") >> eol
+	eof = 
+		*blank >> lit("0") >> eol
 		>> lit("EOF")
-		>> *char_];
-	key = omit[*space] >> repeat(1,4)[digit] >> eol;
-	value = omit[*space] >> *(char_ - eol) >> eol;
-	key_value_pair = key >> value;
+		>> *char_;
+	key = omit[*blank] >> repeat(1,4)[digit];
+	value = omit[*blank] >> *(char_ - eol);
+	key_value_pair = key >> eol >> value >> eol;
 
 	BOOST_SPIRIT_DEBUG_NODE(document);
 	BOOST_SPIRIT_DEBUG_NODE(key_value_pair);
@@ -99,6 +95,7 @@ int main()
 	BOOST_SPIRIT_DEBUG_NODE(value);
 	//grammar end
 
+	std::cin.unsetf(std::ios::skipws);
 	std::string input((std::istreambuf_iterator<char>(std::cin)), std::istreambuf_iterator<char>());
 
 	iterator start = input.begin();
@@ -119,11 +116,13 @@ int main()
 		std::cout << "success!" << std::endl;
 	else
 		std::cout << "failure!" << std::endl;
+	std::cout << "size: " << output.size() << std::endl;
 	for (document_format::iterator it = output.begin(); it != output.end(); ++it)
 	{
 		for (std::map<std::string, std::string>::iterator map_it = it->begin(); map_it != it->end(); ++map_it)
 		{
 			std::cout << map_it->first << ": " << map_it->second << std::endl;
 		}
+		std::cout << std::endl;
 	}
 }
