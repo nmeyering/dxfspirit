@@ -63,13 +63,13 @@ int main()
 	section_head = 
 		omit[*space >> lit("0") >> eol
 		>> lit("SECTION") >> eol
-		>> *space >> lit("2") >> eol]
-		>> section_name >> eol;
+		>> *space >> lit("2") >> eol
+		>> section_name >> eol];
 	section_body = 
 		*((!section_tail) 
 			>> key_value_pair);
 	section_tail = 
-		*space >> lit("0") >> eol
+		omit[*space] >> lit("0") >> eol
 		>> lit("ENDSEC") >> eol;
 	section_name = (
 		lit("HEADER") 
