@@ -1,5 +1,6 @@
 #include <boost/config/warning_disable.hpp>
 //#define BOOST_SPIRIT_DEBUG
+#include <boost/fusion/include/std_pair.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
@@ -8,6 +9,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <map>
 
 void print(std::string str)
 {
@@ -35,10 +37,10 @@ int main()
 
 	// grammar begin
 	document_rule document;
+	map_rule section;
 	map_rule section_body;
 	pair_rule key_value_pair;
 	rule eof;
-	rule section;
 	rule section_head;
 	rule section_tail;
 	str_rule key;
@@ -82,7 +84,7 @@ int main()
 		>> lit("EOF")
 		>> *char_];
 	key = omit[*space] >> repeat(1,4)[digit] >> eol;
-	value = *(char_ - eol) >> eol;
+	value = omit[*space] >> *(char_ - eol) >> eol;
 	key_value_pair = key >> value;
 
 	BOOST_SPIRIT_DEBUG_NODE(document);
@@ -117,6 +119,11 @@ int main()
 		std::cout << "success!" << std::endl;
 	else
 		std::cout << "failure!" << std::endl;
-	for (std::vector<std::string>::iterator it = v.begin(); it != v.end(); ++it)
-		std::cout << *it << "\t";
+	for (document_format::iterator it = output.begin(); it != output.end(); ++it)
+	{
+		for (std::map<std::string, std::string>::iterator map_it = it->begin(); map_it != it->end(); ++map_it)
+		{
+			std::cout << map_it->first << ": " << map_it->second << std::endl;
+		}
+	}
 }
