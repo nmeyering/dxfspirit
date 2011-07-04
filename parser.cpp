@@ -18,11 +18,18 @@ int main()
 	typedef std::string::iterator iterator;
 	typedef qi::rule<iterator> rule;
 	typedef qi::rule<iterator, std::string()> str_rule;
-	typedef qi::rule<iterator, std::pair<std::string, std::string>()> pair_rule;
-	typedef qi::rule<iterator, std::map<std::string, std::string>()> map_rule;
-	typedef qi::rule<iterator, std::vector<std::map<std::string, std::string> >()> mapv_rule;
-	typedef std::vector<std::vector<std::map<std::string, std::string> > > document_format;
-	typedef qi::rule<iterator, document_format()> document_rule;
+
+	typedef std::pair<std::string, std::string> pair_type;
+	typedef qi::rule<iterator, pair_type()> pair_rule;
+
+	typedef std::vector<pair_type> entity_type;
+	typedef qi::rule<iterator, entity_type()> entity_rule;
+
+	typedef std::vector<std::vector<pair_type> > section_type;
+	typedef qi::rule<iterator, section_type()> section_rule;
+
+	typedef std::vector<section_type> document_type;
+	typedef qi::rule<iterator, document_type()> document_rule;
 
 	using qi::digit;
 	using qi::eol;
@@ -35,8 +42,8 @@ int main()
 	// grammar begin
 
 	document_rule document;
-	mapv_rule section_body, section;
-	map_rule entity;
+	section_rule section_body, section;
+	entity_rule entity;
 	pair_rule key_value_pair, entity_head;
 	rule section_head, section_tail;
 	str_rule section_name, entity_name, key, value, eof;
@@ -86,7 +93,7 @@ int main()
 		entity_head 
 		>> *(!entity_head >> key_value_pair);
 	entity_head =
-		qi::string("0") >> eol
+		omit[*blank] >> qi::string("0") >> eol
 		>> entity_name >> eol;
 	// TODO limit set of valid entity names
 	entity_name =
@@ -117,7 +124,7 @@ int main()
 	iterator start = input.begin();
 	iterator end = input.end();
 
-	document_format output;
+	document_type output;
 
 	bool res = 
 		qi::parse(
@@ -132,12 +139,12 @@ int main()
 		std::cout << "success!" << std::endl;
 	else
 		std::cout << "failure!" << std::endl;
-	std::cout << "size: " << output.size() << std::endl;
-	for (document_format::iterator section_it = output.begin(); section_it != output.end(); ++section_it)
+	std::cout << "sections: " << output.size() << std::endl;
+	for (document_type::iterator section_it = output.begin(); section_it != output.end(); ++section_it)
 	{
-		for (std::vector<std::map<std::string, std::string> >::iterator entity_it = section_it->begin(); entity_it != section_it->end(); ++entity_it)
+		for (section_type::iterator entity_it = section_it->begin(); entity_it != section_it->end(); ++entity_it)
 		{
-			for (std::map<std::string, std::string>::iterator elem_it = entity_it->begin(); elem_it != entity_it->end(); ++elem_it)
+			for (entity_type::iterator elem_it = entity_it->begin(); elem_it != entity_it->end(); ++elem_it)
 				std::cout << elem_it->first << ": " << elem_it->second << ", ";
 		}
 		std::cout << std::endl;
