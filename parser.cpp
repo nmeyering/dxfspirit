@@ -145,7 +145,7 @@ int main()
 		for (section_type::iterator entity_it = section_it->begin(); entity_it != section_it->end(); ++entity_it)
 		{
 			for (entity_type::iterator elem_it = entity_it->begin(); elem_it != entity_it->end(); ++elem_it)
-				std::cout << elem_it->first << ": " << elem_it->second << ", ";
+				std::cout << elem_it->first << ": " << elem_it->second << std::endl;
 		}
 		std::cout << std::endl;
 	}
