@@ -1,5 +1,5 @@
 #include <boost/config/warning_disable.hpp>
-//#define BOOST_SPIRIT_DEBUG
+// #define BOOST_SPIRIT_DEBUG
 #include <boost/fusion/include/std_pair.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
@@ -20,7 +20,8 @@ int main()
 	typedef qi::rule<iterator, std::string()> str_rule;
 	typedef qi::rule<iterator, std::pair<std::string, std::string>()> pair_rule;
 	typedef qi::rule<iterator, std::map<std::string, std::string>()> map_rule;
-	typedef std::vector<std::map<std::string, std::string> > document_format;
+	typedef qi::rule<iterator, std::vector<std::map<std::string, std::string> >()> mapv_rule;
+	typedef std::vector<std::vector<std::map<std::string, std::string> > > document_format;
 	typedef qi::rule<iterator, document_format()> document_rule;
 
 	using qi::digit;
@@ -32,38 +33,44 @@ int main()
 	using qi::standard::blank;
 
 	// grammar begin
+
 	document_rule document;
-	map_rule section;
-	map_rule section_body;
-	pair_rule key_value_pair;
-	rule eof;
-	rule section_head;
-	rule section_tail;
-	str_rule key;
-	str_rule section_name;
-	str_rule value;
+	mapv_rule section_body, section;
+	map_rule entity;
+	pair_rule key_value_pair, entity_head;
+	rule section_head, section_tail;
+	str_rule section_name, entity_name, key, value, eof;
 
 	document.name("document");
-	key_value_pair.name("key_value_pair");
 	section.name("section");
+	section_body.name("section_body");
+	entity.name("entity");
+	key_value_pair.name("key_value_pair");
+	entity_head.name("entity_head");
 	section_head.name("section_head");
 	section_tail.name("section_tail");
-	section_body.name("section_body");
 	section_name.name("section_name");
-	eof.name("eof");
+	entity_name.name("entity_name");
 	key.name("key");
 	value.name("value");
+	eof.name("eof");
 
 	document = (+section) >> omit[eof];
-	section = omit[section_head] >> section_body >> omit[section_tail];
+	section =
+		omit[section_head]
+		>> section_body
+		>> omit[section_tail];
 	section_head = 
 		*blank >> lit("0") >> eol
 		>> lit("SECTION") >> eol
 		>> *blank >> lit("2") >> eol
 		>> section_name >> eol;
 	section_body = 
-		*((!section_tail) 
-			>> key_value_pair);
+		*(
+			!section_tail 
+			>> (
+				entity 
+				| omit[key_value_pair]));
 	section_tail = 
 		*blank >> lit("0") >> eol
 		>> lit("ENDSEC") >> eol;
@@ -75,13 +82,22 @@ int main()
 		| lit("ENTITIES")
 		| lit("OBJECTS")
 		| lit("THUMBNAILIMAGE"));
+	entity =
+		entity_head 
+		>> *(!entity_head >> key_value_pair);
+	entity_head =
+		qi::string("0") >> eol
+		>> entity_name >> eol;
+	// TODO limit set of valid entity names
+	entity_name =
+		omit[*blank] >> *(char_ - eol);
+	key_value_pair = key >> eol >> value >> eol;
+	key = omit[*blank] >> repeat(1,4)[digit];
+	value = omit[*blank] >> *(char_ - eol);
 	eof = 
 		*blank >> lit("0") >> eol
 		>> lit("EOF")
 		>> *char_;
-	key = omit[*blank] >> repeat(1,4)[digit];
-	value = omit[*blank] >> *(char_ - eol);
-	key_value_pair = key >> eol >> value >> eol;
 
 	BOOST_SPIRIT_DEBUG_NODE(document);
 	BOOST_SPIRIT_DEBUG_NODE(key_value_pair);
@@ -117,11 +133,12 @@ int main()
 	else
 		std::cout << "failure!" << std::endl;
 	std::cout << "size: " << output.size() << std::endl;
-	for (document_format::iterator it = output.begin(); it != output.end(); ++it)
+	for (document_format::iterator section_it = output.begin(); section_it != output.end(); ++section_it)
 	{
-		for (std::map<std::string, std::string>::iterator map_it = it->begin(); map_it != it->end(); ++map_it)
+		for (std::vector<std::map<std::string, std::string> >::iterator entity_it = section_it->begin(); entity_it != section_it->end(); ++entity_it)
 		{
-			std::cout << map_it->first << ": " << map_it->second << std::endl;
+			for (std::map<std::string, std::string>::iterator elem_it = entity_it->begin(); elem_it != entity_it->end(); ++elem_it)
+				std::cout << elem_it->first << ": " << elem_it->second << ", ";
 		}
 		std::cout << std::endl;
 	}
