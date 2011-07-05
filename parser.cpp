@@ -103,9 +103,9 @@ int main()
 	document_rule document;
 	section_rule section_body, section;
 	entity_rule entity_parser;
-	pair_rule key_value_pair, entity_head;
+	pair_rule key_value_pair;
 	rule section_head, section_tail;
-	str_rule section_name, entity_name, key, value, eof;
+	str_rule section_name, entity_head, entity_name, key, value, eof;
 
 	document.name("document");
 	section.name("section");
@@ -149,10 +149,10 @@ int main()
 		| lit("OBJECTS")
 		| lit("THUMBNAILIMAGE"));
 	entity_parser =
-		entity_head 
+		entity_head
 		>> *(!entity_head >> key_value_pair);
 	entity_head =
-		omit[*blank] >> qi::string("0") >> eol
+		omit[*blank >> qi::string("0") >> eol]
 		>> entity_name >> eol;
 	// TODO limit set of valid entity names
 	entity_name =
@@ -199,15 +199,14 @@ int main()
 	else
 		std::cout << "failure!" << std::endl;
 	std::cout << "sections: " << output.size() << std::endl;
-	/*
 	for (document_type::iterator section_it = output.begin(); section_it != output.end(); ++section_it)
 	{
 		for (section_type::iterator entity_it = section_it->begin(); entity_it != section_it->end(); ++entity_it)
 		{
-			for (entity_type::iterator elem_it = entity_it->begin(); elem_it != entity_it->end(); ++elem_it)
+			std::cout << "found entity \"" << entity_it->name_ << "\":" << std::endl;
+			for (entity::items_type::iterator elem_it = entity_it->items_.begin(); elem_it != entity_it->items_.end(); ++elem_it)
 				std::cout << elem_it->first << ": " << elem_it->second << std::endl;
 		}
 		std::cout << std::endl;
 	}
-	*/
 }
