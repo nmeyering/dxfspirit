@@ -5,6 +5,7 @@
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/phoenix_stl.hpp>
+#include <boost/variant.hpp>
 
 #include <iostream>
 #include <string>
@@ -77,12 +78,18 @@ int main()
 
 	typedef std::string::iterator iterator;
 	typedef qi::rule<iterator> rule;
+	typedef qi::rule<iterator, float()> float_rule;
+	typedef qi::rule<iterator, polyline::vertex_type> vertex_rule;
 	typedef qi::rule<iterator, std::string()> str_rule;
 
 	typedef std::pair<std::string, std::string> pair_type;
 	typedef qi::rule<iterator, pair_type()> pair_rule;
 
 	typedef qi::rule<iterator, entity()> entity_rule;
+
+	typedef qi::rule<iterator, polyline()> polyline_rule;
+
+	typedef qi::rule<iterator, boost::variant<entity, polyline>()> some_entity_rule;
 
 	typedef std::vector<entity> section_type;
 	typedef qi::rule<iterator, section_type()> section_rule;
@@ -102,15 +109,19 @@ int main()
 
 	document_rule document;
 	section_rule section_body, section;
+	some_entity_rule some_entity;
 	entity_rule entity_parser;
+	polyline_rule polyline_parser;
 	pair_rule key_value_pair;
 	rule section_head, section_tail;
 	str_rule section_name, entity_head, entity_name, key, value, eof;
+	float_rule x_coord, y_coord;
 
 	document.name("document");
 	section.name("section");
 	section_body.name("section_body");
 	entity_parser.name("entity");
+	polyline_parser.name("polyline");
 	key_value_pair.name("key_value_pair");
 	entity_head.name("entity_head");
 	section_head.name("section_head");
@@ -119,6 +130,8 @@ int main()
 	entity_name.name("entity_name");
 	key.name("key");
 	value.name("value");
+	x_coord.name("x_coord");
+	y_coord.name("y_coord");
 	eof.name("eof");
 
 	document = (+section) >> omit[eof];
@@ -135,7 +148,7 @@ int main()
 		*(
 			!section_tail 
 			>> (
-				entity_parser
+				some_entity
 				| omit[key_value_pair]));
 	section_tail = 
 		*blank >> lit("0") >> eol
@@ -148,6 +161,7 @@ int main()
 		| lit("ENTITIES")
 		| lit("OBJECTS")
 		| lit("THUMBNAILIMAGE"));
+	some_entity = entity_parser | (!entity_parser >> polyline_parser);
 	entity_parser =
 		entity_head
 		>> *(!entity_head >> key_value_pair);
@@ -157,6 +171,12 @@ int main()
 	// TODO limit set of valid entity names
 	entity_name =
 		omit[*blank] >> *(char_ - eol);
+	polyline_parser =
+		entity_head
+		>> *(!entity_head >> ((!vertex >> key_value_pair) | vertex));
+	vertex = x_coord >> y_coord;
+	x_coord = omit[*blank >> qi::string("10") >> eol >> *blank] >> float_ >> eol;
+	y_coord = omit[*blank >> qi::string("20") >> eol >> *blank] >> float_ >> eol;
 	key_value_pair = key >> eol >> value >> eol;
 	key = omit[*blank] >> repeat(1,4)[digit];
 	value = omit[*blank] >> *(char_ - eol);
