@@ -11,6 +11,65 @@
 #include <vector>
 #include <map>
 
+namespace
+{
+
+struct entity
+{
+	typedef 
+	std::pair<std::string, std::string>
+	item_type;
+
+	typedef 
+	std::map<std::string, std::string>
+	items_type;
+
+	std::string name;
+	items_type items;
+
+	explicit
+	entity(
+		item_type const &item)
+	:
+	items()
+	{
+		items.insert(item);
+	}
+
+	explicit
+	entity(
+		std::string const &_name)
+	:
+	name_(
+		_name)
+	{
+	}
+
+	entity()
+	{}
+};
+
+struct polyline : entity
+{
+	typedef
+		std::pair<
+			float,
+			float
+		>
+		vertex_type;
+
+	std::vector<
+		vertex_type> vertices;
+};
+
+}
+
+BOOST_FUSION_ADAPT_STRUCT(
+	entity,
+	(std::string, name)
+	(entity::items_type, items)
+)
+
 int main()
 {
 	namespace qi = boost::spirit::qi;
@@ -22,10 +81,9 @@ int main()
 	typedef std::pair<std::string, std::string> pair_type;
 	typedef qi::rule<iterator, pair_type()> pair_rule;
 
-	typedef std::vector<pair_type> entity_type;
-	typedef qi::rule<iterator, entity_type()> entity_rule;
+	typedef qi::rule<iterator, entity()> entity_rule;
 
-	typedef std::vector<std::vector<pair_type> > section_type;
+	typedef std::vector<entity> section_type;
 	typedef qi::rule<iterator, section_type()> section_rule;
 
 	typedef std::vector<section_type> document_type;
@@ -43,7 +101,7 @@ int main()
 
 	document_rule document;
 	section_rule section_body, section;
-	entity_rule entity;
+	entity_rule entity_parser;
 	pair_rule key_value_pair, entity_head;
 	rule section_head, section_tail;
 	str_rule section_name, entity_name, key, value, eof;
@@ -51,7 +109,7 @@ int main()
 	document.name("document");
 	section.name("section");
 	section_body.name("section_body");
-	entity.name("entity");
+	entity_parser.name("entity");
 	key_value_pair.name("key_value_pair");
 	entity_head.name("entity_head");
 	section_head.name("section_head");
@@ -76,7 +134,7 @@ int main()
 		*(
 			!section_tail 
 			>> (
-				entity 
+				entity_parser
 				| omit[key_value_pair]));
 	section_tail = 
 		*blank >> lit("0") >> eol
@@ -89,7 +147,7 @@ int main()
 		| lit("ENTITIES")
 		| lit("OBJECTS")
 		| lit("THUMBNAILIMAGE"));
-	entity =
+	entity_parser =
 		entity_head 
 		>> *(!entity_head >> key_value_pair);
 	entity_head =
@@ -140,6 +198,7 @@ int main()
 	else
 		std::cout << "failure!" << std::endl;
 	std::cout << "sections: " << output.size() << std::endl;
+	/*
 	for (document_type::iterator section_it = output.begin(); section_it != output.end(); ++section_it)
 	{
 		for (section_type::iterator entity_it = section_it->begin(); entity_it != section_it->end(); ++entity_it)
@@ -149,4 +208,5 @@ int main()
 		}
 		std::cout << std::endl;
 	}
+	*/
 }
