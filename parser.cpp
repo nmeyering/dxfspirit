@@ -24,16 +24,17 @@ struct entity
 	std::map<std::string, std::string>
 	items_type;
 
-	std::string name;
-	items_type items;
+	std::string name_;
+	items_type items_;
 
 	explicit
 	entity(
-		item_type const &item)
+		item_type const &_item)
 	:
-	items()
+	items_()
 	{
-		items.insert(item);
+		items_.insert(
+			_item);
 	}
 
 	explicit
@@ -66,8 +67,8 @@ struct polyline : entity
 
 BOOST_FUSION_ADAPT_STRUCT(
 	entity,
-	(std::string, name)
-	(entity::items_type, items)
+	(std::string, name_)
+	(entity::items_type, items_)
 )
 
 int main()
